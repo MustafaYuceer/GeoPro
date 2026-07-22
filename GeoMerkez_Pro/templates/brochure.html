@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portföy Sunum Kartı - {{ portfolio.il }} {{ portfolio.ilce }} {{ portfolio.mahalle }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1e293b;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --dark: #0f172a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background: #f8fafc; color: #1e293b; padding: 30px; display: flex; justify-content: center; }
+        .brochure-container { width: 100%; max-width: 800px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 40px; border: 1px solid #e2e8f0; position: relative; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 25px; }
+        .logo h1 { font-size: 1.8rem; font-weight: 800; color: #0f172a; }
+        .logo h1 span { color: #3b82f6; }
+        .logo p { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+        
+        .badge-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+        .badge { padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; }
+        .badge-type { background: #eff6ff; color: #1d4ed8; }
+        .badge-status { background: #ecfdf5; color: #047857; }
+        
+        .title-section { margin-bottom: 25px; }
+        .title-section h2 { font-size: 1.6rem; font-weight: 700; color: #0f172a; }
+        .title-section p { color: #64748b; font-size: 1rem; margin-top: 5px; }
+
+        .price-box { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; padding: 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .price-val { font-size: 2rem; font-weight: 800; color: #34d399; }
+        .price-m2 { font-size: 1rem; opacity: 0.9; }
+
+        .specs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+        .spec-item { padding: 12px 15px; background: #f1f5f9; border-radius: 8px; display: flex; justify-content: space-between; font-size: 0.95rem; }
+        .spec-item label { font-weight: 600; color: #475569; }
+        .spec-item span { font-weight: 700; color: #0f172a; }
+
+        .extra-section { margin-bottom: 30px; background: #fafafa; padding: 15px; border-radius: 8px; border: 1px solid #f1f5f9; }
+        .extra-section h4 { font-size: 0.95rem; font-weight: 700; color: #334155; margin-bottom: 10px; }
+        .extra-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .extra-tag { background: #e2e8f0; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; color: #334155; }
+
+        .footer { display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #e2e8f0; padding-top: 20px; }
+        .agent-info { display: flex; align-items: center; gap: 12px; }
+        .agent-avatar { width: 48px; height: 48px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; }
+        .agent-details h5 { font-size: 1rem; font-weight: 700; color: #0f172a; }
+        .agent-details p { font-size: 0.85rem; color: #64748b; }
+
+        .no-print { position: fixed; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 999; }
+        .btn-print { background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .brochure-container { box-shadow: none; border: none; padding: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="no-print">
+    <button onclick="window.print()" class="btn-print"><i class="fas fa-print"></i> Yazdır / PDF İndir</button>
+    <a href="javascript:history.back()" class="btn-print" style="background: #475569;"><i class="fas fa-arrow-left"></i> Geri</a>
+</div>
+
+<div class="brochure-container">
+    <div class="header">
+        <div class="logo">
+            <h1>GeoMerkez<span>_Pro</span></h1>
+            <p>Gayrimenkul Порtföy Sunum Kartı</p>
+        </div>
+        <div style="text-align: right; font-size: 0.85rem; color: #64748b;">
+            Tarih: {{ portfolio.created_at.strftime('%d.%m.%Y') if portfolio.created_at else '' }}<br>
+            İlan No: #GMP-{{ portfolio.id }}
+        </div>
+    </div>
+
+    <div class="badge-bar">
+        <span class="badge badge-type">{{ portfolio.tip }}</span>
+        <span class="badge badge-status">{{ portfolio.durum or 'Satılık' }}</span>
+    </div>
+
+    <div class="title-section">
+        <h2>{{ portfolio.il }} / {{ portfolio.ilce }} &mdash; {{ portfolio.mahalle }}</h2>
+        <p>{% if portfolio.ada %}Ada: {{ portfolio.ada }} / Parsel: {{ portfolio.parsel }}{% endif %}</p>
+    </div>
+
+    <div class="price-box">
+        <div>
+            <div style="font-size: 0.85rem; opacity: 0.8; text-transform: uppercase;">Satış Fiyatı</div>
+            <div class="price-val">{{ portfolio.fiyat }} ₺</div>
+        </div>
+        {% if portfolio.display_m2_fiyati %}
+        <div style="text-align: right;">
+            <div style="font-size: 0.85rem; opacity: 0.8;">Birim m² Fiyatı</div>
+            <div class="price-m2">{{ portfolio.display_m2_fiyati }} ₺ / m²</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="specs-grid">
+        <div class="spec-item"><label>Şehir (İl):</label><span>{{ portfolio.il or '-' }}</span></div>
+        <div class="spec-item"><label>İlçe:</label><span>{{ portfolio.ilce or '-' }}</span></div>
+        <div class="spec-item"><label>Mahalle:</label><span>{{ portfolio.mahalle or '-' }}</span></div>
+        <div class="spec-item"><label>Alan / Büyüklük:</label><span>{% if portfolio.display_m2 %}{{ portfolio.display_m2 }} m²{% else %}-{% endif %}</span></div>
+        {% if portfolio.tip == 'Daire' %}
+        <div class="spec-item"><label>Bulunduğu Kat:</label><span>{{ portfolio.kat or '-' }}</span></div>
+        <div class="spec-item"><label>Oda Sayısı:</label><span>{{ portfolio.oda_sayisi or '-' }}</span></div>
+        <div class="spec-item"><label>Brüt m²:</label><span>{{ portfolio.brut_m2 or '-' }}</span></div>
+        <div class="spec-item"><label>Bina Yaşı:</label><span>{{ portfolio.bina_yasi or '-' }}</span></div>
+        {% else %}
+        <div class="spec-item"><label>Ada No:</label><span>{{ portfolio.ada or '-' }}</span></div>
+        <div class="spec-item"><label>Parsel No:</label><span>{{ portfolio.parsel or '-' }}</span></div>
+        {% endif %}
+    </div>
+
+    {% set extra = portfolio.get_extra %}
+    {% if extra %}
+    <div class="extra-section">
+        <h4><i class="fas fa-list-check"></i> Ek Özellikler & Detaylar</h4>
+        <div class="extra-tags">
+            {% for k, v in extra.items() %}
+            {% if k not in ['TİP', 'İL', 'İLÇE', 'MAHALLE', 'ADA', 'PARSEL', 'FİYAT', 'SATIŞ FİYATI', 'GÖRÜNÜRLÜK'] and v and (v|string).strip() != '' and (v|string).lower() != 'nan' %}
+            <div class="extra-tag"><strong>{{ k }}:</strong> {{ v }}</div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <div class="agent-info">
+            <div class="agent-avatar"><i class="fas fa-user-tie"></i></div>
+            <div class="agent-details">
+                <h5>{{ portfolio.danisman or 'Yetkili Gayrimenkul Danışmanı' }}</h5>
+                <p>Lisanslı Portföy Yöneticisi &bull; GeoMerkez Pro</p>
+            </div>
+        </div>
+        <div style="text-align: right;">
+            {% if portfolio.musteri_no %}
+            <p style="font-weight: 700; color: #0f172a;"><i class="fas fa-phone"></i> {{ portfolio.musteri_no }}</p>
+            {% endif %}
+            <p style="font-size: 0.8rem; color: #64748b;">GeoMerkez Pro Portföy Yönetim Sistemi</p>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

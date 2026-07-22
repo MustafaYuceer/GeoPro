@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if customer %}Müşteri Talebi Düzenle{% else %}Yeni Müşteri & Talep Ekle{% endif %}{% endblock %}
+
+{% block content %}
+<div class="glass-card" style="max-width: 900px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px;">
+        <h2><i class="fas fa-user-tag" style="color: var(--accent);"></i> {% if customer %}Müşteri Talebini Düzenle{% else %}Yeni Müşteri & Talep Ekle{% endif %}</h2>
+        <a href="{{ url_for('list_customers') }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Geri Dön</a>
+    </div>
+
+    <form method="POST" action="{% if customer %}{{ url_for('edit_customer', id=customer.id) }}{% else %}{{ url_for('add_customer') }}{% endif %}">
+        
+        <!-- Müşteri Kişisel Bilgileri -->
+        <h3 style="margin-bottom: 15px; font-size: 1.1rem; color: var(--accent);"><i class="fas fa-id-card"></i> Müşteri İletişim Bilgileri</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-size: 0.9rem;">Müşteri Adı - Soyadı *</label>
+                <input type="text" name="ad_soyad" value="{{ customer.ad_soyad if customer else '' }}" class="form-control" required placeholder="Örn: Ahmet Yılmaz" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-size: 0.9rem;">Telefon Numarası</label>
+                <input type="text" name="telefon" value="{{ customer.telefon if customer else '' }}" class="form-control" placeholder="Örn: 0532 123 45 67" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;">
+            </div>
+        </div>
+
+        <!-- Gayrimenkul Kriterleri -->
+        <h3 style="margin-bottom: 15px; font-size: 1.1rem; color: var(--accent);"><i class="fas fa-search-location"></i> Aradığı Gayrimenkul Kriterleri</h3>
+        
+        <div style="margin-bottom: 25px;">
+            <label style="display: block; margin-bottom: 5px; font-size: 0.9rem;">Gayrimenkul Tipi</label>
+            <select name="tip" class="form-control" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: #1e293b; color: white;">
+                <option value="Hepsi" {% if customer and customer.tip == 'Hepsi' %}selected{% endif %}>Hepsi (Fark Etmez)</option>
+                <option value="Arsa" {% if customer and customer.tip == 'Arsa' %}selected{% endif %}>Arsa / Arazi</option>
+                <option value="Daire" {% if customer and customer.tip == 'Daire' %}selected{% endif %}>Daire / Konut</option>
+            </select>
+        </div>
+
+        <!-- ÇOKLU İL VE İLÇE SEÇİM ALANI -->
+        <div style="margin-bottom: 25px; padding: 18px; background: rgba(0,0,0,0.25); border-radius: 10px; border: 1px solid var(--glass-border);">
+            <h4 style="font-size: 1rem; color: #38bdf8; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-map-marked-alt"></i> Hedef İl ve İlçe Seçimi (Birden Çok Seçilebilir)
+            </h4>
+
+            <!-- 1. İLLER SEÇİM ALANI -->
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-secondary);">1. İlleri Seçin:</label>
+                    <span id="selected-cities-badge-count" style="font-size: 0.8rem; color: #34d399; font-weight: bold;">0 İl Seçildi</span>
+                </div>
+                
+                <!-- İl Arama Kutusu -->
+                <div style="margin-bottom: 8px; position: relative;">
+                    <input type="text" id="il-search-input" onkeyup="filterCityCheckboxes()" placeholder="🔍 İl ara... (Örn: Denizli, Aydın, Muğla)" class="form-control" style="padding: 8px 12px; font-size: 0.88rem; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 6px; color: white; width: 100%;">
+                </div>
+
+                <!-- İl Checkbox Paneli -->
+                <div id="city-checkbox-container" style="max-height: 160px; overflow-y: auto; background: rgba(15,23,42,0.6); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px;">
+                    <label class="city-checkbox-item" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; padding: 3px 6px; border-radius: 4px; background: rgba(255,255,255,0.05);">
+                        <input type="checkbox" id="tum-turkiye-cb" onchange="toggleTumTurkiye(this.checked)" style="cursor: pointer;">
+                        <strong>Tüm Türkiye</strong>
+                    </label>
+                    {% for city_name in turkey_cities.keys() %}
+                    <label class="city-checkbox-item" data-city="{{ city_name }}" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; padding: 3px 6px; border-radius: 4px; background: rgba(255,255,255,0.03);">
+                        <input type="checkbox" class="il-check-input" name="il_check[]" value="{{ city_name }}" onchange="onCitySelectionChanged()" style="cursor: pointer;">
+                        <span>{{ city_name }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 2. İLÇELER SEÇİM ALANI (Seçilen illere göre dinamik gruplanır) -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label style="font-weight: 600; font-size: 0.9rem; color: var(--text-secondary);">2. İlçeleri Seçin (Seçtiğiniz İllere Göre Gruplanır):</label>
+                    <span id="selected-districts-badge-count" style="font-size: 0.8rem; color: #fbbf24; font-weight: bold;">0 İlçe Seçildi</span>
+                </div>
+
+                <!-- İlçe Arama Kutusu -->
+                <div style="margin-bottom: 10px;">
+                    <input type="text" id="ilce-search-input" onkeyup="filterDistrictCheckboxes()" placeholder="🔍 İlçe ara... (Örn: Merkezefendi, Kuşadası, Bodrum)" class="form-control" style="padding: 8px 12px; font-size: 0.88rem; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 6px; color: white; width: 100%;">
+                </div>
+
+                <!-- Gruplanmış İlçe Seçim Konteyneri -->
+                <div id="district-groups-container" style="max-height: 280px; overflow-y: auto; background: rgba(15,23,42,0.6); border: 1px solid var(--glass-border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 15px;">
+                    <p id="no-city-warning" style="color: var(--text-secondary); font-size: 0.88rem; margin: 0; text-align: center; padding: 15px;">
+                        <i class="fas fa-info-circle"></i> Yukarıdan en az bir il seçtiğinizde o ilin ilçeleri burada seçilebilir olarak listelenecektir.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-size: 0.9rem;">Bütçe Aralığı (TL)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" name="min_fiyat" value="{{ customer.min_fiyat|int if customer and customer.min_fiyat else '' }}" class="form-control" placeholder="Min TL (Örn: 2000000)" style="width: 50%; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;">
+                    <input type="text" name="max_fiyat" value="{{ customer.max_fiyat|int if customer and customer.max_fiyat else '' }}" class="form-control" placeholder="Max TL (Örn: 5000000)" style="width: 50%; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;">
+                </div>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-size: 0.9rem;">Metrekare Aralığı (m²)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" name="min_m2" value="{{ customer.min_m2|int if customer and customer.min_m2 else '' }}" class="form-control" placeholder="Min m² (Örn: 100)" style="width: 50%; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;">
+                    <input type="text" name="max_m2" value="{{ customer.max_m2|int if customer and customer.max_m2 else '' }}" class="form-control" placeholder="Max m² (Örn: 500)" style="width: 50%; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;">
+                </div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-size: 0.9rem;">Mahalle / Bölge İsteyi (Opsiyonel)</label>
+                <input type="text" name="mahalle" value="{{ customer.mahalle if customer else '' }}" class="form-control" placeholder="Örn: Çakmak Mah." style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 5px; font-size: 0.9rem;">Talep Durumu</label>
+                <select name="durum" class="form-control" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: #1e293b; color: white;">
+                    <option value="Aktif" {% if not customer or customer.durum == 'Aktif' %}selected{% endif %}>🟢 Aktif (Arıyor)</option>
+                    <option value="Tamamlandı" {% if customer and customer.durum == 'Tamamlandı' %}selected{% endif %}>🔵 Tamamlandı (Alım Yaptı)</option>
+                    <option value="İptal" {% if customer and customer.durum == 'İptal' %}selected{% endif %}>🔴 İptal Edildi</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 25px;">
+            <label style="display: block; margin-bottom: 5px; font-size: 0.9rem;">Müşterinin Özel Notları ve İstekleri</label>
+            <textarea name="notlar" class="form-control" rows="3" placeholder="Örn: Yola cepheli arsa istiyor, nakit ödeme yapacak, acil arıyor..." style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;">{{ customer.notlar if customer else '' }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 1.1rem; font-weight: bold;">
+            <i class="fas fa-save"></i> {% if customer %}Talebi Güncelle{% else %}Müşteri Talebini Kaydet{% endif %}
+        </button>
+    </form>
+</div>
+
+<script>
+const turkeyCitiesDataCustomer = {{ turkey_cities|tojson }};
+const initialSelectedCitiesStr = {{ (customer.il if customer and customer.il else '')|tojson }};
+const initialSelectedDistrictsStr = {{ (customer.ilce if customer and customer.ilce else '')|tojson }};
+
+let savedSelectedDistricts = new Set();
+if (initialSelectedDistrictsStr) {
+    initialSelectedDistrictsStr.split(',').forEach(d => {
+        const item = d.trim();
+        if (item) savedSelectedDistricts.add(trCanonical(item));
+    });
+}
+
+function trCanonical(s) {
+    if (!s) return '';
+    return s.toString().toUpperCase()
+        .replace(/İ/g, 'I').replace(/İ/g, 'I').replace(/ı/g, 'I').replace(/i/g, 'I')
+        .replace(/Ü/g, 'U').replace(/ü/g, 'U')
+        .replace(/Ö/g, 'O').replace(/ö/g, 'O')
+        .replace(/Ğ/g, 'G').replace(/ğ/g, 'G')
+        .replace(/Ş/g, 'S').replace(/ş/g, 'S')
+        .replace(/Ç/g, 'C').replace(/ç/g, 'C')
+        .trim();
+}
+
+function filterCityCheckboxes() {
+    const query = trCanonical(document.getElementById('il-search-input').value);
+    const items = document.querySelectorAll('.city-checkbox-item');
+    items.forEach(item => {
+        const city = item.getAttribute('data-city');
+        if (!city) return;
+        if (!query || trCanonical(city).includes(query)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+function filterDistrictCheckboxes() {
+    const query = trCanonical(document.getElementById('ilce-search-input').value);
+    const items = document.querySelectorAll('.ilce-checkbox-item');
+    items.forEach(item => {
+        const districtName = item.getAttribute('data-district-name');
+        if (!query || (districtName && trCanonical(districtName).includes(query))) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+function toggleTumTurkiye(isChecked) {
+    const cityCbs = document.querySelectorAll('.il-check-input');
+    cityCbs.forEach(cb => {
+        cb.checked = isChecked;
+    });
+    onCitySelectionChanged();
+}
+
+function onCitySelectionChanged() {
+    document.querySelectorAll('.ilce-check-input:checked').forEach(cb => {
+        savedSelectedDistricts.add(trCanonical(cb.value));
+    });
+
+    const selectedCityCbs = document.querySelectorAll('.il-check-input:checked');
+    const selectedCities = Array.from(selectedCityCbs).map(cb => cb.value);
+    
+    document.getElementById('selected-cities-badge-count').textContent = selectedCities.length + ' İl Seçildi';
+    
+    const container = document.getElementById('district-groups-container');
+    container.innerHTML = '';
+
+    if (selectedCities.length === 0) {
+        container.innerHTML = `<p id="no-city-warning" style="color: var(--text-secondary); font-size: 0.88rem; margin: 0; text-align: center; padding: 15px;">
+            <i class="fas fa-info-circle"></i> Yukarıdan en az bir il seçtiğinizde o ilin ilçeleri burada seçilebilir olarak listelenecektir.
+        </p>`;
+        updateDistrictBadgeCount();
+        return;
+    }
+
+    selectedCities.forEach(city => {
+        let districts = [];
+        for (const c in turkeyCitiesDataCustomer) {
+            if (trCanonical(c) === trCanonical(city)) {
+                districts = turkeyCitiesDataCustomer[c];
+                break;
+            }
+        }
+
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'city-district-group';
+        groupDiv.style.cssText = 'background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 8px; padding: 10px;';
+        
+        let html = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">
+                <span style="font-weight: 700; color: #38bdf8; font-size: 0.9rem;">
+                    <i class="fas fa-map-marker-alt"></i> ${city} İlçeleri
+                </span>
+                <label style="font-size: 0.8rem; cursor: pointer; color: #34d399; display: flex; align-items: center; gap: 4px;">
+                    <input type="checkbox" onchange="toggleGroupDistricts('${city}', this.checked)" style="cursor: pointer;"> Tümünü Seç
+                </label>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px;">
+        `;
+
+        districts.forEach(d => {
+            const isChecked = savedSelectedDistricts.has(trCanonical(d)) ? 'checked' : '';
+            html += `
+                <label class="ilce-checkbox-item" data-district-name="${d}" style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; cursor: pointer; padding: 3px 6px; border-radius: 4px; background: rgba(255,255,255,0.03);">
+                    <input type="checkbox" class="ilce-check-input group-city-${city.replace(/\s+/g, '')}" name="ilce_check[]" value="${d}" ${isChecked} onchange="updateDistrictBadgeCount()" style="cursor: pointer;">
+                    <span>${d}</span>
+                </label>
+            `;
+        });
+
+        html += `</div>`;
+        groupDiv.innerHTML = html;
+        container.appendChild(groupDiv);
+    });
+
+    filterDistrictCheckboxes();
+    updateDistrictBadgeCount();
+}
+
+function toggleGroupDistricts(city, isChecked) {
+    const className = 'group-city-' + city.replace(/\s+/g, '');
+    document.querySelectorAll('.' + className).forEach(cb => {
+        cb.checked = isChecked;
+        if (isChecked) savedSelectedDistricts.add(trCanonical(cb.value));
+        else savedSelectedDistricts.delete(trCanonical(cb.value));
+    });
+    updateDistrictBadgeCount();
+}
+
+function updateDistrictBadgeCount() {
+    const selectedDistricts = document.querySelectorAll('.ilce-check-input:checked');
+    document.getElementById('selected-districts-badge-count').textContent = selectedDistricts.length + ' İlçe Seçildi';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (initialSelectedCitiesStr) {
+        const cities = initialSelectedCitiesStr.split(',').map(s => s.trim().toUpperCase());
+        document.querySelectorAll('.il-check-input').forEach(cb => {
+            if (cities.includes(cb.value.toUpperCase())) {
+                cb.checked = true;
+            }
+        });
+    }
+    onCitySelectionChanged();
+});
+</script>
+{% endblock %}

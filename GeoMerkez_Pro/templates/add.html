@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% block title %}Manuel Ekleme{% endblock %}
+
+{% block content %}
+<div class="glass-card" style="max-width: 800px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>Yeni Portföy Ekle</h2>
+        <a href="{{ url_for('dashboard') }}" class="btn" style="background-color: transparent !important; color: white !important; border: 1px solid white !important; border-radius: 8px; padding: 8px 16px; font-weight: bold; text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px;"><i class="fas fa-arrow-left"></i> Geri Dön</a>
+    </div>
+
+    <form method="POST" action="{{ url_for('add_portfolio') }}">
+        
+        <!-- Tip Seçimi -->
+        <div style="margin-bottom: 25px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+            <label style="display: block; margin-bottom: 10px; font-weight: 600;">Portföy Tipi</label>
+            <div style="display: flex; gap: 20px;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <input type="radio" name="tip" value="Daire" checked onchange="toggleTipFields()"> 
+                    <i class="fas fa-building" style="color: var(--accent);"></i> Daire (GeoDaire)
+                </label>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <input type="radio" name="tip" value="Arsa" onchange="toggleTipFields()"> 
+                    <i class="fas fa-map" style="color: var(--success);"></i> Arsa (GeoParsel)
+                </label>
+            </div>
+        </div>
+
+        <!-- Temel Bilgiler (Her İkisinde de Var) -->
+        <h3 style="margin-bottom: 15px; font-size: 1.1rem; color: var(--accent);">Temel Bilgiler</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+            <div>
+                <label>İl</label>
+                <select name="il" id="add_il_select" class="form-control" required onchange="onAddIlChange()">
+                    <option value="">İl Seçiniz</option>
+                    {% for city in all_ils %}
+                    <option value="{{ city }}">{{ city }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>İlçe</label>
+                <select name="ilce" id="add_ilce_select" class="form-control" required>
+                    <option value="">Önce İl Seçiniz</option>
+                </select>
+            </div>
+            <script>
+                const turkeyCitiesDataAdd = {{ turkey_cities_json|safe if turkey_cities_json else '{}' }};
+                function onAddIlChange() {
+                    const ilSelect = document.getElementById('add_il_select');
+                    const ilceSelect = document.getElementById('add_ilce_select');
+                    if (!ilSelect || !ilceSelect) return;
+                    
+                    const selectedCity = ilSelect.value;
+                    ilceSelect.innerHTML = '<option value="">İlçe Seçiniz</option>';
+                    if (!selectedCity) return;
+                    
+                    let targetIlces = [];
+                    for (const city in turkeyCitiesDataAdd) {
+                        if (city.toLowerCase().replace('i', 'ı') === selectedCity.toLowerCase().replace('i', 'ı') || city.toUpperCase() === selectedCity.toUpperCase()) {
+                            targetIlces = turkeyCitiesDataAdd[city];
+                            break;
+                        }
+                    }
+                    
+                    targetIlces.forEach(ilce => {
+                        const opt = document.createElement('option');
+                        opt.value = ilce;
+                        opt.textContent = ilce;
+                        ilceSelect.appendChild(opt);
+                    });
+                }
+            </script>
+            <div>
+                <label>Mahalle</label>
+                <input type="text" name="mahalle" class="form-control" required>
+            </div>
+            <div>
+                <label>Ada</label>
+                <input type="text" name="ada" class="form-control">
+            </div>
+            <div>
+                <label>Parsel</label>
+                <input type="text" name="parsel" class="form-control">
+            </div>
+            <div>
+                <label>Fiyat</label>
+                <input type="text" name="fiyat" class="form-control">
+            </div>
+            <div>
+                <label>Durum</label>
+                <select name="durum" class="form-control">
+                    <option value="Satılık">Satılık</option>
+                    <option value="Kiralık">Kiralık</option>
+                    <option value="Pasif">Pasif</option>
+                </select>
+            </div>
+            <div>
+                <label>Danışman</label>
+                <input type="text" name="danisman" class="form-control" placeholder="Danışman Adı">
+            </div>
+            <div>
+                <label>Müşteri Ad - Soyad</label>
+                <input type="text" name="musteri_adi" class="form-control" placeholder="Müşteri Adı - Soyadı">
+            </div>
+            <div>
+                <label>Müşteri No</label>
+                <input type="text" name="musteri_no" class="form-control" placeholder="Telefon veya Müşteri No">
+            </div>
+        </div>
+
+        <!-- Daire'ye Özel Bilgiler -->
+        <div id="daire-fields">
+            <h3 style="margin-bottom: 15px; font-size: 1.1rem; color: var(--accent);">Daire Detayları</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+                <div>
+                    <label>Kat</label>
+                    <input type="text" name="kat" class="form-control" placeholder="Örn: 2. Kat">
+                </div>
+                <div>
+                    <label>Oda Sayısı</label>
+                    <input type="text" name="oda_sayisi" class="form-control" placeholder="Örn: 3+1">
+                </div>
+                <div>
+                    <label>Brüt M2</label>
+                    <input type="text" name="brut_m2" class="form-control" placeholder="Örn: 120">
+                </div>
+                <div>
+                    <label>Net M2</label>
+                    <input type="text" name="net_m2" class="form-control" placeholder="Örn: 100">
+                </div>
+                <div>
+                    <label>Bina Yaşı</label>
+                    <input type="text" name="bina_yasi" class="form-control" placeholder="Örn: 5">
+                </div>
+            </div>
+        </div>
+
+        <!-- Arsa'ya Özel Bilgiler -->
+        <div id="arsa-fields" style="display: none;">
+            <h3 style="margin-bottom: 15px; font-size: 1.1rem; color: var(--success);">Arsa Detayları</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+                <div>
+                    <label>Alan (m²)</label>
+                    <input type="text" name="alan" class="form-control" placeholder="Örn: 500">
+                </div>
+                <div>
+                    <label>Kaç Katlı İmar</label>
+                    <input type="text" name="kac_katli" class="form-control" placeholder="Örn: 3">
+                </div>
+            </div>
+        </div>
+
+        <!-- Bağlantılar (Linkler) -->
+        <h3 style="margin-bottom: 15px; font-size: 1.1rem; color: var(--accent);">Bağlantılar (Opsiyonel)</h3>
+        <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 25px;">
+            <div>
+                <label>Sahibinden / İlan Linki</label>
+                <input type="text" name="ilan_linki" class="form-control" placeholder="https://www.sahibinden.com/ilan/...">
+            </div>
+            <div>
+                <label>E-İmar Linki</label>
+                <input type="text" name="e_imar_linki" class="form-control" placeholder="https://...">
+            </div>
+            <div>
+                <label>TKGM Parsel Sorgu Linki</label>
+                <input type="text" name="tkgm_linki" class="form-control" placeholder="https://parselsorgu.tkgm.gov.tr/...">
+            </div>
+        <!-- Otomatik Algılanan Excel Özel Başlıkları -->
+        {% if detected_custom_headers %}
+        <div style="margin-bottom: 25px; padding: 15px; background: rgba(56, 189, 248, 0.1); border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.3);">
+            <h3 style="font-size: 1rem; color: #38bdf8; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-magic"></i> Excel'inizde Bulunan Özel Başlıklar (Otomatik Algılandı)
+            </h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 15px;">Excel dosyanızdaki özel sütun başlıkları otomatik algılandı. Değer girmek istediklerinizi aşağıdan doldurabilirsiniz:</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
+                {% for header in detected_custom_headers %}
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-size: 0.85rem; color: #f59e0b; font-weight: 600;">{{ header }}</label>
+                    <input type="hidden" name="custom_header[]" value="{{ header }}">
+                    <input type="text" name="custom_value[]" placeholder="{{ header }} değerini girin..." class="form-control" style="width: 100%; padding: 8px 12px; font-size: 0.88rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white;">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Özel Excel Başlıkları / Ek Özellikler -->
+        <div style="margin-bottom: 25px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px dashed var(--glass-border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="font-size: 1.1rem; color: #f59e0b; margin: 0;"><i class="fas fa-plus-circle"></i> Yeni Özel Başlık / Ek Özellik Ekle</h3>
+                <button type="button" onclick="addCustomFieldRow()" class="btn btn-sm" style="background: #f59e0b; color: white; border: none; font-weight: bold; border-radius: 6px; padding: 6px 12px; cursor: pointer;">
+                    <i class="fas fa-plus"></i> Başlık Ekle
+                </button>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 15px;">Yukarıdakiler dışında Excel dosyanıza yeni bir sütun daha eklemek isterseniz buradan yeni başlık ekleyebilirsiniz.</p>
+            <div id="custom-fields-container"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1rem;">
+            <i class="fas fa-save"></i> Kaydet ve Ekle
+        </button>
+    </form>
+</div>
+
+<script>
+function addCustomFieldRow() {
+    const container = document.getElementById('custom-fields-container');
+    const row = document.createElement('div');
+    row.className = 'custom-field-row';
+    row.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr 40px; gap: 10px; margin-bottom: 10px; align-items: center;';
+    row.innerHTML = `
+        <input type="text" name="custom_header[]" placeholder="Başlık Adı (Örn: Manzara)" class="form-control" style="padding: 8px; font-size: 0.9rem;">
+        <input type="text" name="custom_value[]" placeholder="Değeri (Örn: Deniz Manzaralı)" class="form-control" style="padding: 8px; font-size: 0.9rem;">
+        <button type="button" onclick="this.parentElement.remove()" class="btn btn-sm btn-delete" style="background: #ef4444; color: white; border: none; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; cursor: pointer;" title="Kaldır">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(row);
+}
+</script>
+
+<style>
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid var(--glass-border);
+        background: rgba(0,0,0,0.2);
+        color: white;
+        font-family: inherit;
+    }
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+</style>
+
+<script>
+function toggleTipFields() {
+    const tip = document.querySelector('input[name="tip"]:checked').value;
+    const daireFields = document.getElementById('daire-fields');
+    const arsaFields = document.getElementById('arsa-fields');
+    if (tip === 'Arsa') {
+        daireFields.style.display = 'none';
+        arsaFields.style.display = 'block';
+    } else {
+        daireFields.style.display = 'block';
+        arsaFields.style.display = 'none';
+    }
+}
+// Sayfa yüklendiğinde çalıştır
+toggleTipFields();
+</script>
+{% endblock %}
